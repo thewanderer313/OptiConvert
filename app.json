@@ -2,7 +2,7 @@
   "expo": {
     "name": "OptiConvert",
     "slug": "OptiConvert",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/opticonverticon.png",
     "userInterfaceStyle": "light",
@@ -28,7 +28,9 @@
         {
           "image": "./assets/OCSplash.png",
           "backgroundColor": "#1B2A4A",
-          "resizeMode": "cover"
+          "resizeMode": "cover",
+          "imageWidth": 1284,
+          "enableFullScreenImage_legacy": true
         }
       ]
     ],
