@@ -20,7 +20,8 @@
         "backgroundColor": "#1B2A4A",
         "foregroundImage": "./assets/opticonverticon-foreground.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.thewanderer313.OptiConvert"
     },
     "web": {
       "favicon": "./assets/favicon.png"
