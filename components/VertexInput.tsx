@@ -107,8 +107,11 @@ export default function VertexInput({
 
   const swapDirection = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Swap is a UI direction flip, not a value entry — call the raw prop
+    // callbacks so we don't write the contact-lens vertex (often 0) into
+    // shared.vertexDistance, which represents the spectacle vertex.
     const prevFrom = originalVertex;
-    onFromChange(newVertex);
+    onChangeOriginalVertex(newVertex);
     onChangeNewVertex(prevFrom);
   };
 
