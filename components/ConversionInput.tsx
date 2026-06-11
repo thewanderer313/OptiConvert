@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, TextInput, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, TextInput, Text, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
 import { Colors, Spacing, BorderRadius, Typography, Shadow } from '../constants/theme';
 import UnitPicker from './UnitPicker';
 import ScrollPicker, { PickerConfig } from './ScrollPicker';
@@ -19,6 +19,8 @@ interface Props {
   label?: string;
   placeholder?: string;
   picker?: PickerConfig;
+  /** Which entry method opens on direct field tap. Defaults to 'keyboard'. */
+  defaultEntry?: 'picker' | 'keyboard';
 }
 
 export default function ConversionInput({
@@ -30,14 +32,37 @@ export default function ConversionInput({
   label,
   placeholder = '0',
   picker,
+  defaultEntry = 'keyboard',
 }: Props) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const inputRef = useRef<TextInput>(null);
+
+  const isPickerDefault = defaultEntry === 'picker' && !!picker;
+  const inputInert = isPickerDefault && !editing;
+
+  const focusInput = () => {
+    setEditing(true);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const handleBlur = () => {
+    if (isPickerDefault) setEditing(false);
+  };
+
+  const handleFieldTap = () => {
+    if (isPickerDefault && !editing) {
+      setPickerOpen(true);
+    } else {
+      focusInput();
+    }
+  };
 
   return (
     <View style={styles.container}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <View style={styles.inputRow}>
-        {picker && (
+      <Pressable style={styles.inputRow} onPress={handleFieldTap}>
+        {picker && !isPickerDefault && (
           <TouchableOpacity
             style={styles.pickerButton}
             onPress={() => setPickerOpen(true)}
@@ -48,22 +73,34 @@ export default function ConversionInput({
             <View style={styles.pickerIconBar} />
           </TouchableOpacity>
         )}
+        {picker && isPickerDefault && (
+          <TouchableOpacity
+            style={styles.iconBtnKbd}
+            onPress={focusInput}
+            activeOpacity={0.6}
+          >
+            <Text style={styles.iconKbdText}>⌨</Text>
+          </TouchableOpacity>
+        )}
         <TextInput
+          ref={inputRef}
           style={styles.input}
           value={value}
           onChangeText={onChangeValue}
+          onBlur={handleBlur}
           keyboardType="decimal-pad"
           placeholder={placeholder}
           placeholderTextColor={Colors.border}
           selectionColor={Colors.accent}
           maxLength={15}
+          pointerEvents={inputInert ? 'none' : 'auto'}
         />
         <UnitPicker
           options={unitOptions}
           selected={unit}
           onSelect={onChangeUnit}
         />
-      </View>
+      </Pressable>
 
       {picker && (
         <ScrollPicker
@@ -127,5 +164,19 @@ const styles = StyleSheet.create({
   pickerIconBarShort: {
     width: 10,
     backgroundColor: Colors.accent,
+  },
+  iconBtnKbd: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: Colors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  iconKbdText: {
+    fontSize: 14,
+    color: Colors.primary,
   },
 });
