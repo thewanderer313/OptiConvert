@@ -50,6 +50,8 @@ export default function NearAddView() {
 
     const demand = !isNaN(wd) && wd > 0 ? accommodativeDemand(wd) : null;
     const amp = !isNaN(age) ? hofstetterAmplitude(age) : null;
+    // Use the conservative (minimum) amplitude for the add — the average
+    // overestimates accommodation in presbyopes and yields adds that are too low.
     const suggested =
       demand != null && amp ? roundToStep(tentativeAdd(demand, amp.min), 0.25) : null;
     const tentUsed = !isNaN(enteredTent) ? enteredTent : suggested;
@@ -93,6 +95,7 @@ export default function NearAddView() {
       });
     }
 
+    // Clinical sanity check: NRA should not exceed the add in place.
     let warning: string | null = null;
     if (!isNaN(nra) && tentUsed != null && nra > tentUsed + 0.001) {
       warning = 'NRA exceeds the add — the tentative add may be too high (over-plussed).';
