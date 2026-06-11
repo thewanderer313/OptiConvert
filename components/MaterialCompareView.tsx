@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { View, TextInput, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useMemo, useRef, useState } from 'react';
+import { View, TextInput, Text, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
 import { Colors, Spacing, BorderRadius, Typography, Shadow } from '../constants/theme';
 import {
   REFRACTIVE_INDICES,
@@ -14,6 +14,8 @@ const PICKER_DIA: PickerConfig = { min: 40, max: 80, step: 1, precision: 0 };
 const PICKER_MIN_T: PickerConfig = { min: 0.5, max: 5, step: 0.1, precision: 1 };
 
 type PickerField = 'power' | 'diameter' | 'minThickness' | null;
+
+const PICKER_DEFAULT_FIELDS: Set<NonNullable<PickerField>> = new Set(['power']);
 
 interface MaterialRow {
   value: number;
@@ -31,6 +33,25 @@ export default function MaterialCompareView() {
   const [diameter, setDiameter] = useState('70');
   const [minThickness, setMinThickness] = useState('1.5');
   const [activePicker, setActivePicker] = useState<PickerField>(null);
+  const [editingField, setEditingField] = useState<PickerField>(null);
+  const inputRefs = useRef<Partial<Record<NonNullable<PickerField>, TextInput | null>>>({});
+
+  const focusInput = (field: NonNullable<PickerField>) => {
+    setEditingField(field);
+    setTimeout(() => inputRefs.current[field]?.focus(), 0);
+  };
+
+  const handleFieldTap = (field: NonNullable<PickerField>) => {
+    if (PICKER_DEFAULT_FIELDS.has(field) && editingField !== field) {
+      setActivePicker(field);
+    } else {
+      focusInput(field);
+    }
+  };
+
+  const handleBlur = (field: NonNullable<PickerField>) => {
+    if (PICKER_DEFAULT_FIELDS.has(field)) setEditingField(null);
+  };
 
   const p = parseFloat(power);
   const d = parseFloat(diameter);
@@ -106,6 +127,47 @@ export default function MaterialCompareView() {
     </TouchableOpacity>
   );
 
+  // Render helper (NOT a component) — returning JSX from a function avoids
+  // creating a new React component identity per render, which would unmount
+  // the TextInput on every keystroke and break focus.
+  const renderSmartField = (
+    field: NonNullable<PickerField>,
+    value: string,
+    onValueChange: (text: string) => void,
+    placeholder: string
+  ) => {
+    const isPickerDefault = PICKER_DEFAULT_FIELDS.has(field);
+    const inputInert = isPickerDefault && editingField !== field;
+    return (
+      <Pressable style={styles.inputBox} onPress={() => handleFieldTap(field)}>
+        <TextInput
+          ref={(el) => { inputRefs.current[field] = el; }}
+          style={styles.input}
+          value={value}
+          onChangeText={onValueChange}
+          onBlur={() => handleBlur(field)}
+          keyboardType="decimal-pad"
+          placeholder={placeholder}
+          placeholderTextColor={Colors.border}
+          selectionColor={Colors.accent}
+          pointerEvents={inputInert ? 'none' : 'auto'}
+        />
+        {isPickerDefault ? (
+          <TouchableOpacity
+            style={styles.iconBtnKbd}
+            onPress={() => focusInput(field)}
+            activeOpacity={0.6}
+            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+          >
+            <Text style={styles.iconKbdText}>⌨</Text>
+          </TouchableOpacity>
+        ) : (
+          <PickerButton field={field} />
+        )}
+      </Pressable>
+    );
+  };
+
   const pickerInfo = activePicker ? getPickerConfig() : null;
   const thicknessLabel = isPlusLens ? 'Center' : 'Edge';
 
@@ -115,49 +177,16 @@ export default function MaterialCompareView() {
       <View style={styles.row}>
         <View style={styles.field}>
           <Text style={styles.label}>LENS POWER (D)</Text>
-          <View style={styles.inputBox}>
-            <TextInput
-              style={styles.input}
-              value={power}
-              onChangeText={setPower}
-              keyboardType="decimal-pad"
-              placeholder="-4.00"
-              placeholderTextColor={Colors.border}
-              selectionColor={Colors.accent}
-            />
-            <PickerButton field="power" />
-          </View>
+          {renderSmartField('power', power, setPower, '-4.00')}
         </View>
         <View style={styles.field}>
           <Text style={styles.label}>DIAMETER (mm)</Text>
-          <View style={styles.inputBox}>
-            <TextInput
-              style={styles.input}
-              value={diameter}
-              onChangeText={setDiameter}
-              keyboardType="decimal-pad"
-              placeholder="70"
-              placeholderTextColor={Colors.border}
-              selectionColor={Colors.accent}
-            />
-            <PickerButton field="diameter" />
-          </View>
+          {renderSmartField('diameter', diameter, setDiameter, '70')}
         </View>
       </View>
 
       <Text style={styles.label}>MIN THICKNESS (mm)</Text>
-      <View style={styles.inputBox}>
-        <TextInput
-          style={styles.input}
-          value={minThickness}
-          onChangeText={setMinThickness}
-          keyboardType="decimal-pad"
-          placeholder="1.5"
-          placeholderTextColor={Colors.border}
-          selectionColor={Colors.accent}
-        />
-        <PickerButton field="minThickness" />
-      </View>
+      {renderSmartField('minThickness', minThickness, setMinThickness, '1.5')}
 
       {valid ? (
         <>
@@ -430,4 +459,15 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: Colors.textSecondary,
   },
+  iconBtnKbd: {
+    width: 24,
+    height: 24,
+    borderRadius: 5,
+    backgroundColor: Colors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  iconKbdText: { fontSize: 12, color: Colors.primary },
 });
