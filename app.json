@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "OptiConvert",
+    "slug": "OptiConvert",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/opticonverticon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "opticonvert",
+    "splash": {
+      "image": "./assets/OCSplash.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#1B2A4A"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1B2A4A",
+        "foregroundImage": "./assets/opticonverticon-foreground.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "522d7ab2-60c6-4551-8f08-e45dd2d39896"
+      }
+    },
+    "owner": "thewanderer313"
+  }
+}

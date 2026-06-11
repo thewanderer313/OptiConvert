@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-expo-app@latest . --template blank-typescript)",
+      "Read(//c/Users/Ryank/Desktop/Vibe Coding/**)",
+      "Bash(npx create-expo-app@latest OptiConvert --template blank-typescript)",
+      "Bash(cp -r OptiConvert/* \"/c/Users/Ryank/Desktop/Vibe Coding/Converter/\")",
+      "Bash(cp OptiConvert/.gitignore \"/c/Users/Ryank/Desktop/Vibe Coding/Converter/\")",
+      "Bash(rm -rf OptiConvert)",
+      "Bash(cp \"/c/Users/Ryank/Desktop/Vibe Coding/OptiConvert/package.json\" \"/c/Users/Ryank/Desktop/Vibe Coding/OptiConvert/package-lock.json\" \"/c/Users/Ryank/Desktop/Vibe Coding/OptiConvert/tsconfig.json\" \"/c/Users/Ryank/Desktop/Vibe Coding/OptiConvert/.gitignore\" \"/c/Users/Ryank/Desktop/Vibe Coding/Converter/\")",
+      "Bash(rm -rf \"/c/Users/Ryank/Desktop/Vibe Coding/OptiConvert\")",
+      "Bash(npx expo:*)",
+      "Bash(rm -rf node_modules package-lock.json)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Skill(update-config)",
+      "PowerShell(try { Get-Content \"$env:USERPROFILE\\\\.claude\\\\settings.json\" -Raw | ConvertFrom-Json | Out-Null; \"VALID JSON\" } catch { \"INVALID: $_\" })"
+    ]
+  }
+}
