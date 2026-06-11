@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -50,6 +50,7 @@ import {
 } from '../utils/conversions';
 import { getLearningContent, LearningContent } from '../utils/learningSteps';
 
+import { useSharedValues, SharedRx } from '../contexts/SharedValuesContext';
 import DrawerMenu from '../components/DrawerMenu';
 import ModeTabs from '../components/ModeTabs';
 import ConversionInput from '../components/ConversionInput';
@@ -232,6 +233,64 @@ export default function HomeScreen() {
   // Generic multi-field state for all new categories
   const [fieldValues, setFieldValues] = useState<Record<string, Record<string, string>>>({});
 
+  const { values: shared, setValue: setShared } = useSharedValues();
+
+  // Hydrate the just-selected category's shared fields from the shared store,
+  // but only when the field is empty (don't overwrite the user's entry).
+  // Runs on initial mount (initial category) and on every category change.
+  useEffect(() => {
+    const cat = category;
+    const pdStr = shared.patientPd != null ? shared.patientPd.toFixed(1) : undefined;
+    const wdStr = shared.workingDistance != null ? String(shared.workingDistance) : undefined;
+    const riStr = shared.refractiveIndex != null ? shared.refractiveIndex.toFixed(2) : undefined;
+    const vdStr = shared.vertexDistance != null ? shared.vertexDistance.toFixed(1) : undefined;
+    const rx: { sphere: string; cylinder: string; axis: string } | null = shared.lastRx
+      ? {
+          sphere: shared.lastRx.sphere.toFixed(2),
+          cylinder: shared.lastRx.cylinder.toFixed(2),
+          axis: String(shared.lastRx.axis),
+        }
+      : null;
+
+    const additions: Record<string, string> = {};
+    const tryAdd = (key: string, val: string | undefined) => {
+      if (val && !fieldValues[cat]?.[key]) additions[key] = val;
+    };
+
+    if (cat === 'mbs' || cat === 'framePd') tryAdd('patientPd', pdStr);
+    if (cat === 'nearPd') {
+      tryAdd('distancePd', pdStr);
+      tryAdd('workingDistance', wdStr);
+    }
+    if (rx) {
+      if (cat === 'transpose') {
+        tryAdd('sphere', rx.sphere);
+        tryAdd('cylinder', rx.cylinder);
+        tryAdd('axis', rx.axis);
+      }
+      if (cat === 'sphEquiv' || cat === 'baseCurve') {
+        tryAdd('sphere', rx.sphere);
+        tryAdd('cylinder', rx.cylinder);
+      }
+      if (cat === 'magnification' || cat === 'asWorn') {
+        tryAdd('power', rx.sphere);
+      }
+    }
+    if (cat === 'magnification') {
+      tryAdd('refractiveIndex', riStr);
+      tryAdd('vertexDistance', vdStr);
+    }
+    if (cat === 'asWorn') tryAdd('refractiveIndex', riStr);
+
+    if (Object.keys(additions).length > 0) {
+      setFieldValues((prev) => ({
+        ...prev,
+        [cat]: { ...(prev[cat] ?? {}), ...additions },
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category]);
+
   const getFieldVal = useCallback(
     (cat: string, key: string) => fieldValues[cat]?.[key] ?? '',
     [fieldValues]
@@ -243,8 +302,24 @@ export default function HomeScreen() {
         ...prev,
         [cat]: { ...prev[cat], [key]: value },
       }));
+
+      // Mirror shared values back to the context so other tools see them.
+      const num = parseFloat(value);
+      if (isNaN(num)) return;
+
+      if ((cat === 'mbs' || cat === 'framePd') && key === 'patientPd') {
+        setShared('patientPd', num);
+      } else if (cat === 'nearPd' && key === 'distancePd') {
+        setShared('patientPd', num);
+      } else if (cat === 'nearPd' && key === 'workingDistance') {
+        setShared('workingDistance', num);
+      } else if (cat === 'magnification' && key === 'vertexDistance') {
+        setShared('vertexDistance', num);
+      } else if ((cat === 'magnification' || cat === 'asWorn') && key === 'refractiveIndex') {
+        setShared('refractiveIndex', num);
+      }
     },
-    []
+    [setShared]
   );
 
   const getFields = useCallback(
@@ -256,6 +331,36 @@ export default function HomeScreen() {
     (cat: string) => (key: string, value: string) => setFieldVal(cat, key, value),
     [setFieldVal]
   );
+
+  const captureRxFromCategory = useCallback(
+    (cat: string) => {
+      const fields = fieldValues[cat] ?? {};
+      const s = parseFloat(fields.sphere);
+      const c = parseFloat(fields.cylinder);
+      const a = parseFloat(fields.axis ?? '0');
+      if (!isNaN(s) && !isNaN(c)) {
+        setShared('lastRx', {
+          sphere: s,
+          cylinder: c,
+          axis: isNaN(a) ? 0 : a,
+        });
+      }
+    },
+    [fieldValues, setShared]
+  );
+
+  useEffect(() => {
+    captureRxFromCategory('transpose');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fieldValues.transpose]);
+  useEffect(() => {
+    captureRxFromCategory('sphEquiv');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fieldValues.sphEquiv]);
+  useEffect(() => {
+    captureRxFromCategory('baseCurve');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fieldValues.baseCurve]);
 
   // ─── Compute results ───────────────────────────────────
 
