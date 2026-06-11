@@ -41,6 +41,9 @@ export default function ToolPickerSheet({ visible, hub, selected, onSelect, onCl
                   style={[styles.item, isActive && styles.itemActive]}
                   onPress={() => handleSelect(item.key)}
                   activeOpacity={0.6}
+                  accessibilityRole="button"
+                  accessibilityLabel={item.label}
+                  accessibilityState={{ selected: isActive }}
                 >
                   <View style={styles.itemContent}>
                     <Text style={[styles.itemLabel, isActive && styles.itemLabelActive]}>

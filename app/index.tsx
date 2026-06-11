@@ -340,13 +340,12 @@ export default function HomeScreen() {
       const fields = fieldValues[cat] ?? {};
       const s = parseFloat(fields.sphere);
       const c = parseFloat(fields.cylinder);
-      const a = parseFloat(fields.axis ?? '0');
-      if (!isNaN(s) && !isNaN(c)) {
-        setShared('lastRx', {
-          sphere: s,
-          cylinder: c,
-          axis: isNaN(a) ? 0 : a,
-        });
+      const a = parseFloat(fields.axis);
+      // Require a real axis before writing — sphEquiv has no axis field, so
+      // it correctly never writes lastRx. This prevents an axis=0 leak from
+      // mid-entry on Transpose hydrating into Vertex on next mount.
+      if (!isNaN(s) && !isNaN(c) && !isNaN(a)) {
+        setShared('lastRx', { sphere: s, cylinder: c, axis: a });
       }
     },
     [fieldValues, setShared]

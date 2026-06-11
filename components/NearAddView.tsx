@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors, Spacing, BorderRadius, Typography, Shadow } from '../constants/theme';
 import {
@@ -32,8 +32,15 @@ export default function NearAddView() {
   const initialWd = shared.workingDistance != null ? String(shared.workingDistance) : '40';
   const [values, setValues] = useState<Record<string, string>>({ workingDistance: initialWd });
 
-  // Keep workingDistance in shared store as the user edits it.
+  // Keep workingDistance in shared store as the user edits it. Skip the
+  // first run so we don't clobber the shared store with our own placeholder
+  // default when the user hasn't touched the field yet.
+  const initialMount = useRef(true);
   useEffect(() => {
+    if (initialMount.current) {
+      initialMount.current = false;
+      return;
+    }
     const wd = parseFloat(values.workingDistance);
     if (!isNaN(wd)) setShared('workingDistance', wd);
   }, [values.workingDistance, setShared]);

@@ -114,19 +114,6 @@ export default function MaterialCompareView() {
     }
   };
 
-  const PickerButton = ({ field }: { field: PickerField }) => (
-    <TouchableOpacity
-      style={styles.pickerBtn}
-      onPress={() => setActivePicker(field)}
-      activeOpacity={0.6}
-      hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-    >
-      <View style={styles.pickerIconBar} />
-      <View style={[styles.pickerIconBar, styles.pickerIconBarShort]} />
-      <View style={styles.pickerIconBar} />
-    </TouchableOpacity>
-  );
-
   // Render helper (NOT a component) — returning JSX from a function avoids
   // creating a new React component identity per render, which would unmount
   // the TextInput on every keystroke and break focus.
@@ -162,7 +149,16 @@ export default function MaterialCompareView() {
             <Text style={styles.iconKbdText}>⌨</Text>
           </TouchableOpacity>
         ) : (
-          <PickerButton field={field} />
+          <TouchableOpacity
+            style={styles.pickerBtn}
+            onPress={() => setActivePicker(field)}
+            activeOpacity={0.6}
+            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+          >
+            <View style={styles.pickerIconBar} />
+            <View style={[styles.pickerIconBar, styles.pickerIconBarShort]} />
+            <View style={styles.pickerIconBar} />
+          </TouchableOpacity>
         )}
       </Pressable>
     );
