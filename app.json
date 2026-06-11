@@ -30,7 +30,12 @@
           "backgroundColor": "#1B2A4A",
           "resizeMode": "cover",
           "imageWidth": 1284,
-          "enableFullScreenImage_legacy": true
+          "enableFullScreenImage_legacy": true,
+          "android": {
+            "image": "./assets/opticonverticon-foreground.png",
+            "backgroundColor": "#1B2A4A",
+            "imageWidth": 220
+          }
         }
       ]
     ],

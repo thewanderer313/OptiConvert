@@ -35,7 +35,7 @@ export default function CustomSplash({
       <Image
         source={require('../assets/OCSplash.png')}
         style={StyleSheet.absoluteFill}
-        resizeMode="cover"
+        resizeMode="contain"
       />
     </Animated.View>
   );
