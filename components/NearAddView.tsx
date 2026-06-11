@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors, Spacing, BorderRadius, Typography, Shadow } from '../constants/theme';
 import {
@@ -10,13 +10,14 @@ import {
   formatNumber,
 } from '../utils/conversions';
 import FieldGroup, { FieldConfig } from './FieldGroup';
+import { useSharedValues } from '../contexts/SharedValuesContext';
 
 const FIELDS: FieldConfig[] = [
   { key: 'workingDistance', label: 'WORKING DIST (cm)', placeholder: '40', suffix: 'cm', picker: { min: 20, max: 100, step: 5, precision: 0 } },
   { key: 'age', label: 'AGE (yrs)', placeholder: '45', suffix: 'yr', picker: { min: 5, max: 90, step: 1, precision: 0 } },
-  { key: 'tentativeAdd', label: 'TENTATIVE ADD (D)', placeholder: '+2.00', suffix: 'D', picker: { min: 0, max: 4, step: 0.25, precision: 2 } },
-  { key: 'nra', label: 'NRA (+D)', placeholder: '+2.00', suffix: 'D', picker: { min: 0, max: 3, step: 0.25, precision: 2 } },
-  { key: 'pra', label: 'PRA (−D)', placeholder: '-2.00', suffix: 'D', picker: { min: -4, max: 0, step: 0.25, precision: 2 } },
+  { key: 'tentativeAdd', label: 'TENTATIVE ADD (D)', placeholder: '+2.00', suffix: 'D', picker: { min: 0, max: 4, step: 0.25, precision: 2 }, defaultEntry: 'picker' },
+  { key: 'nra', label: 'NRA (+D)', placeholder: '+2.00', suffix: 'D', picker: { min: 0, max: 3, step: 0.25, precision: 2 }, defaultEntry: 'picker' },
+  { key: 'pra', label: 'PRA (−D)', placeholder: '-2.00', suffix: 'D', picker: { min: -4, max: 0, step: 0.25, precision: 2 }, defaultEntry: 'picker' },
 ];
 
 interface ResultRow {
@@ -27,7 +28,15 @@ interface ResultRow {
 }
 
 export default function NearAddView() {
-  const [values, setValues] = useState<Record<string, string>>({ workingDistance: '40' });
+  const { values: shared, setValue: setShared } = useSharedValues();
+  const initialWd = shared.workingDistance != null ? String(shared.workingDistance) : '40';
+  const [values, setValues] = useState<Record<string, string>>({ workingDistance: initialWd });
+
+  // Keep workingDistance in shared store as the user edits it.
+  useEffect(() => {
+    const wd = parseFloat(values.workingDistance);
+    if (!isNaN(wd)) setShared('workingDistance', wd);
+  }, [values.workingDistance, setShared]);
 
   const onChange = (key: string, value: string) =>
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -41,8 +50,6 @@ export default function NearAddView() {
 
     const demand = !isNaN(wd) && wd > 0 ? accommodativeDemand(wd) : null;
     const amp = !isNaN(age) ? hofstetterAmplitude(age) : null;
-    // Use the conservative (minimum) amplitude for the add — the average
-    // overestimates accommodation in presbyopes and yields adds that are too low.
     const suggested =
       demand != null && amp ? roundToStep(tentativeAdd(demand, amp.min), 0.25) : null;
     const tentUsed = !isNaN(enteredTent) ? enteredTent : suggested;
@@ -86,7 +93,6 @@ export default function NearAddView() {
       });
     }
 
-    // Clinical sanity check: NRA should not exceed the add in place.
     let warning: string | null = null;
     if (!isNaN(nra) && tentUsed != null && nra > tentUsed + 0.001) {
       warning = 'NRA exceeds the add — the tentative add may be too high (over-plussed).';
@@ -133,10 +139,7 @@ export default function NearAddView() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginTop: Spacing.sm,
-    gap: Spacing.sm,
-  },
+  container: { marginTop: Spacing.sm, gap: Spacing.sm },
   card: {
     marginHorizontal: Spacing.md,
     backgroundColor: Colors.surface,
@@ -156,36 +159,14 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: Colors.border,
   },
-  rowEmphasis: {
-    backgroundColor: Colors.primary,
-  },
-  rowLeft: {
-    flex: 1,
-  },
-  rowLabel: {
-    ...Typography.label,
-    color: Colors.text,
-  },
-  rowLabelEmphasis: {
-    color: Colors.textOnPrimary,
-  },
-  rowHint: {
-    fontSize: 11,
-    color: Colors.textSecondary,
-    marginTop: 1,
-  },
-  rowHintEmphasis: {
-    color: Colors.accentLight,
-  },
-  rowValue: {
-    ...Typography.result,
-    color: Colors.text,
-    fontVariant: ['tabular-nums'],
-  },
-  rowValueEmphasis: {
-    color: Colors.textOnPrimary,
-    fontWeight: '700',
-  },
+  rowEmphasis: { backgroundColor: Colors.primary },
+  rowLeft: { flex: 1 },
+  rowLabel: { ...Typography.label, color: Colors.text },
+  rowLabelEmphasis: { color: Colors.textOnPrimary },
+  rowHint: { fontSize: 11, color: Colors.textSecondary, marginTop: 1 },
+  rowHintEmphasis: { color: Colors.accentLight },
+  rowValue: { ...Typography.result, color: Colors.text, fontVariant: ['tabular-nums'] },
+  rowValueEmphasis: { color: Colors.textOnPrimary, fontWeight: '700' },
   emptyCard: {
     marginHorizontal: Spacing.md,
     backgroundColor: Colors.surfaceAlt,
@@ -193,10 +174,7 @@ const styles = StyleSheet.create({
     padding: Spacing.xl,
     alignItems: 'center',
   },
-  emptyText: {
-    ...Typography.body,
-    color: Colors.textSecondary,
-  },
+  emptyText: { ...Typography.body, color: Colors.textSecondary },
   warningBox: {
     marginHorizontal: Spacing.md,
     backgroundColor: 'rgba(192, 57, 43, 0.08)',
@@ -205,11 +183,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.error,
     padding: Spacing.sm,
   },
-  warningText: {
-    fontSize: 12,
-    color: Colors.error,
-    fontWeight: '500',
-  },
+  warningText: { fontSize: 12, color: Colors.error, fontWeight: '500' },
   footer: {
     marginHorizontal: Spacing.md,
     fontSize: 11,
