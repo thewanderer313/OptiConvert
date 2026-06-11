@@ -112,60 +112,60 @@ const PICKER_WORK_DIST = { min: 20, max: 100, step: 5, precision: 0 };
 // ─── Field definitions for multi-input categories ───────────
 
 const TRANSPOSE_FIELDS: FieldConfig[] = [
-  { key: 'sphere', label: 'SPHERE (D)', placeholder: '-2.00', suffix: 'D', picker: PICKER_SPHERE },
-  { key: 'cylinder', label: 'CYLINDER (D)', placeholder: '-1.50', suffix: 'D', picker: PICKER_CYLINDER },
-  { key: 'axis', label: 'AXIS (°)', placeholder: '90', suffix: '°', picker: PICKER_AXIS },
+  { key: 'sphere', label: 'SPHERE (D)', placeholder: '-2.00', suffix: 'D', picker: PICKER_SPHERE, defaultEntry: 'picker' },
+  { key: 'cylinder', label: 'CYLINDER (D)', placeholder: '-1.50', suffix: 'D', picker: PICKER_CYLINDER, defaultEntry: 'picker' },
+  { key: 'axis', label: 'AXIS (°)', placeholder: '90', suffix: '°', picker: PICKER_AXIS, defaultEntry: 'picker' },
 ];
 
 const SPH_EQUIV_FIELDS: FieldConfig[] = [
-  { key: 'sphere', label: 'SPHERE (D)', placeholder: '-2.00', suffix: 'D', picker: PICKER_SPHERE },
-  { key: 'cylinder', label: 'CYLINDER (D)', placeholder: '-1.50', suffix: 'D', picker: PICKER_CYLINDER },
+  { key: 'sphere', label: 'SPHERE (D)', placeholder: '-2.00', suffix: 'D', picker: PICKER_SPHERE, defaultEntry: 'picker' },
+  { key: 'cylinder', label: 'CYLINDER (D)', placeholder: '-1.50', suffix: 'D', picker: PICKER_CYLINDER, defaultEntry: 'picker' },
 ];
 
 const MBS_FIELDS: FieldConfig[] = [
   { key: 'ed', label: 'EFFECTIVE DIA', placeholder: '54', suffix: 'mm', picker: { min: 40, max: 70, step: 1, precision: 0 } },
   { key: 'framePd', label: 'FRAME PD', placeholder: '70', suffix: 'mm', picker: { min: 55, max: 85, step: 1, precision: 0 } },
-  { key: 'patientPd', label: 'PATIENT PD', placeholder: '64', suffix: 'mm', picker: PICKER_PD },
+  { key: 'patientPd', label: 'PATIENT PD', placeholder: '64', suffix: 'mm', picker: PICKER_PD, defaultEntry: 'picker' },
 ];
 
 const PRENTICE_FIELDS: FieldConfig[] = [
-  { key: 'decentration', label: 'DECENTRATION', placeholder: '5', suffix: 'mm', picker: PICKER_DECEN },
-  { key: 'power', label: 'LENS POWER', placeholder: '-4.00', suffix: 'D', picker: PICKER_SPHERE },
+  { key: 'decentration', label: 'DECENTRATION', placeholder: '5', suffix: 'mm', picker: PICKER_DECEN, defaultEntry: 'picker' },
+  { key: 'power', label: 'LENS POWER', placeholder: '-4.00', suffix: 'D', picker: PICKER_SPHERE, defaultEntry: 'picker' },
 ];
 
 const JAVAL_FIELDS: FieldConfig[] = [
-  { key: 'k1', label: 'K1 (STEEP)', placeholder: '44.00', suffix: 'D', picker: PICKER_K },
-  { key: 'k1Axis', label: 'K1 AXIS', placeholder: '90', suffix: '°', picker: PICKER_AXIS },
-  { key: 'k2', label: 'K2 (FLAT)', placeholder: '42.50', suffix: 'D', picker: PICKER_K },
-  { key: 'k2Axis', label: 'K2 AXIS', placeholder: '180', suffix: '°', picker: PICKER_AXIS },
+  { key: 'k1', label: 'K1 (STEEP)', placeholder: '44.00', suffix: 'D', picker: PICKER_K, defaultEntry: 'picker' },
+  { key: 'k1Axis', label: 'K1 AXIS', placeholder: '90', suffix: '°', picker: PICKER_AXIS, defaultEntry: 'picker' },
+  { key: 'k2', label: 'K2 (FLAT)', placeholder: '42.50', suffix: 'D', picker: PICKER_K, defaultEntry: 'picker' },
+  { key: 'k2Axis', label: 'K2 AXIS', placeholder: '180', suffix: '°', picker: PICKER_AXIS, defaultEntry: 'picker' },
 ];
 
 const FRAME_PD_FIELDS: FieldConfig[] = [
   { key: 'aSize', label: 'A SIZE', placeholder: '52', suffix: 'mm', picker: { min: 40, max: 62, step: 1, precision: 0 } },
   { key: 'dbl', label: 'DBL (BRIDGE)', placeholder: '18', suffix: 'mm', picker: { min: 14, max: 24, step: 1, precision: 0 } },
-  { key: 'patientPd', label: 'PATIENT PD', placeholder: '64', suffix: 'mm', picker: PICKER_PD },
+  { key: 'patientPd', label: 'PATIENT PD', placeholder: '64', suffix: 'mm', picker: PICKER_PD, defaultEntry: 'picker' },
 ];
 
 const NEAR_PD_FIELDS: FieldConfig[] = [
-  { key: 'distancePd', label: 'DISTANCE PD', placeholder: '64', suffix: 'mm', picker: PICKER_PD },
+  { key: 'distancePd', label: 'DISTANCE PD', placeholder: '64', suffix: 'mm', picker: PICKER_PD, defaultEntry: 'picker' },
   { key: 'workingDistance', label: 'WORKING DIST', placeholder: '40', suffix: 'cm', picker: PICKER_WORK_DIST },
 ];
 
 const BASE_CURVE_FIELDS: FieldConfig[] = [
-  { key: 'sphere', label: 'SPHERE (D)', placeholder: '-2.00', suffix: 'D', picker: PICKER_SPHERE },
-  { key: 'cylinder', label: 'CYLINDER (D)', placeholder: '-1.50', suffix: 'D', picker: PICKER_CYLINDER },
+  { key: 'sphere', label: 'SPHERE (D)', placeholder: '-2.00', suffix: 'D', picker: PICKER_SPHERE, defaultEntry: 'picker' },
+  { key: 'cylinder', label: 'CYLINDER (D)', placeholder: '-1.50', suffix: 'D', picker: PICKER_CYLINDER, defaultEntry: 'picker' },
 ];
 
 const MAGNIFICATION_FIELDS: FieldConfig[] = [
-  { key: 'power', label: 'BACK VERTEX', placeholder: '-6.00', suffix: 'D', picker: PICKER_SPHERE },
+  { key: 'power', label: 'BACK VERTEX', placeholder: '-6.00', suffix: 'D', picker: PICKER_SPHERE, defaultEntry: 'picker' },
   { key: 'centerThickness', label: 'CENTER THICK', placeholder: '2.0', suffix: 'mm', picker: PICKER_SMALL_MM },
-  { key: 'frontCurve', label: 'FRONT CURVE', placeholder: '4.00', suffix: 'D', picker: { min: 0, max: 12, step: 0.50, precision: 2 } },
+  { key: 'frontCurve', label: 'FRONT CURVE', placeholder: '4.00', suffix: 'D', picker: { min: 0, max: 12, step: 0.50, precision: 2 }, defaultEntry: 'picker' },
   { key: 'refractiveIndex', label: 'REF INDEX', placeholder: '1.50', picker: PICKER_INDEX },
-  { key: 'vertexDistance', label: 'VERTEX DIST', placeholder: '12', suffix: 'mm', picker: PICKER_VERTEX },
+  { key: 'vertexDistance', label: 'VERTEX DIST', placeholder: '12', suffix: 'mm', picker: PICKER_VERTEX, defaultEntry: 'picker' },
 ];
 
 const AS_WORN_FIELDS: FieldConfig[] = [
-  { key: 'power', label: 'SPHERE POWER (D)', placeholder: '-4.00', suffix: 'D', picker: PICKER_SPHERE },
+  { key: 'power', label: 'SPHERE POWER (D)', placeholder: '-4.00', suffix: 'D', picker: PICKER_SPHERE, defaultEntry: 'picker' },
   { key: 'tilt', label: 'PANTO TILT (°)', placeholder: '10', suffix: '°', picker: { min: 0, max: 25, step: 1, precision: 0 } },
   { key: 'refractiveIndex', label: 'INDEX (n)', placeholder: '1.50', picker: PICKER_INDEX },
 ];
@@ -701,6 +701,7 @@ export default function HomeScreen() {
             unitOptions={DIOPTER_OPTIONS}
             label="ENTER VALUE"
             picker={PICKER_SPHERE}
+            defaultEntry="picker"
           />
         );
       case 'prism':
@@ -713,6 +714,7 @@ export default function HomeScreen() {
             unitOptions={PRISM_OPTIONS}
             label="ENTER PRISM"
             picker={{ min: 0, max: 30, step: 0.5, precision: 1 }}
+            defaultEntry="picker"
           />
         );
       case 'vertex':
