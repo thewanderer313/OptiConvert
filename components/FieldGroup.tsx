@@ -76,7 +76,7 @@ export default function FieldGroup({ fields, values, onChange, columns = 2 }: Pr
                     selectionColor={Colors.accent}
                     pointerEvents={inputInert ? 'none' : 'auto'}
                   />
-                  {field.picker && isPickerDefault ? (
+                  {isPickerDefault ? (
                     <TouchableOpacity
                       style={styles.iconBtnKbd}
                       onPress={() => focusInput(field.key)}
