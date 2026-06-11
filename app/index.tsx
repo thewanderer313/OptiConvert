@@ -184,7 +184,6 @@ export default function HomeScreen() {
   const [hubTool, setHubTool] = useState<Record<string, Category>>({});
 
   const currentHub = HUBS.find((h) => h.key === hubKey) ?? HUBS[0];
-  const currentLabel = currentHub.title;
   const currentToolLabel = currentHub.items.find((i) => i.key === category)?.label ?? currentHub.title;
   const hasMultipleTools = currentHub.items.length > 1;
 
