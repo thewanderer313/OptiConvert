@@ -52,7 +52,8 @@ import { getLearningContent, LearningContent } from '../utils/learningSteps';
 
 import { useSharedValues } from '../contexts/SharedValuesContext';
 import DrawerMenu from '../components/DrawerMenu';
-import ModeTabs from '../components/ModeTabs';
+import HeaderTitleButton from '../components/HeaderTitleButton';
+import ToolPickerSheet from '../components/ToolPickerSheet';
 import ConversionInput from '../components/ConversionInput';
 import ResultsList from '../components/ResultsList';
 import LearningPanel from '../components/LearningPanel';
@@ -178,11 +179,14 @@ export default function HomeScreen() {
   const [category, setCategory] = useState<Category>('diopters');
   const [learningMode, setLearningMode] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [toolSheetOpen, setToolSheetOpen] = useState(false);
   // Remember the last sub-tool used in each hub.
   const [hubTool, setHubTool] = useState<Record<string, Category>>({});
 
   const currentHub = HUBS.find((h) => h.key === hubKey) ?? HUBS[0];
   const currentLabel = currentHub.title;
+  const currentToolLabel = currentHub.items.find((i) => i.key === category)?.label ?? currentHub.title;
+  const hasMultipleTools = currentHub.items.length > 1;
 
   const handleSelectHub = useCallback(
     (key: string) => {
@@ -1010,7 +1014,12 @@ export default function HomeScreen() {
               <View style={styles.hamburgerLine} />
             </TouchableOpacity>
             <View style={styles.headerCenter}>
-              <Text style={styles.headerTitle}>{currentLabel}</Text>
+              <HeaderTitleButton
+                hubTitle={currentHub.title}
+                toolLabel={currentToolLabel}
+                hasMultiple={hasMultipleTools}
+                onPress={() => setToolSheetOpen(true)}
+              />
             </View>
             <TouchableOpacity
               style={[
@@ -1042,14 +1051,14 @@ export default function HomeScreen() {
             onClose={() => setDrawerOpen(false)}
           />
 
-          {/* Sub-tool mode tabs for the current hub */}
-          {currentHub.items.length > 1 && (
-            <ModeTabs
-              items={currentHub.items}
-              selected={category}
-              onSelect={handleSelectTool}
-            />
-          )}
+          {/* Sub-tool picker sheet */}
+          <ToolPickerSheet
+            visible={toolSheetOpen}
+            hub={currentHub}
+            selected={category}
+            onSelect={handleSelectTool}
+            onClose={() => setToolSheetOpen(false)}
+          />
 
           {/* Scrollable content */}
           <ScrollView
@@ -1136,10 +1145,6 @@ const styles = StyleSheet.create({
   },
   headerCenter: {
     flex: 1,
-  },
-  headerTitle: {
-    ...Typography.header,
-    color: Colors.textOnPrimary,
   },
   learnButton: {
     flexDirection: 'row',
