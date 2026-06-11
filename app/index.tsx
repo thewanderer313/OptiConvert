@@ -50,7 +50,7 @@ import {
 } from '../utils/conversions';
 import { getLearningContent, LearningContent } from '../utils/learningSteps';
 
-import { useSharedValues, SharedRx } from '../contexts/SharedValuesContext';
+import { useSharedValues } from '../contexts/SharedValuesContext';
 import DrawerMenu from '../components/DrawerMenu';
 import ModeTabs from '../components/ModeTabs';
 import ConversionInput from '../components/ConversionInput';
@@ -241,7 +241,7 @@ export default function HomeScreen() {
   useEffect(() => {
     const cat = category;
     const pdStr = shared.patientPd != null ? shared.patientPd.toFixed(1) : undefined;
-    const wdStr = shared.workingDistance != null ? String(shared.workingDistance) : undefined;
+    const wdStr = shared.workingDistance != null ? shared.workingDistance.toFixed(0) : undefined;
     const riStr = shared.refractiveIndex != null ? shared.refractiveIndex.toFixed(2) : undefined;
     const vdStr = shared.vertexDistance != null ? shared.vertexDistance.toFixed(1) : undefined;
     const rx: { sphere: string; cylinder: string; axis: string } | null = shared.lastRx
