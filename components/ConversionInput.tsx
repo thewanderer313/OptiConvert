@@ -62,26 +62,27 @@ export default function ConversionInput({
     <View style={styles.container}>
       {label && <Text style={styles.label}>{label}</Text>}
       <Pressable style={styles.inputRow} onPress={handleFieldTap}>
-        {picker && !isPickerDefault && (
+        {isPickerDefault ? (
+          <TouchableOpacity
+            style={styles.iconBtnKbd}
+            onPress={focusInput}
+            activeOpacity={0.6}
+            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+          >
+            <Text style={styles.iconKbdText}>⌨</Text>
+          </TouchableOpacity>
+        ) : picker ? (
           <TouchableOpacity
             style={styles.pickerButton}
             onPress={() => setPickerOpen(true)}
             activeOpacity={0.6}
+            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
           >
             <View style={styles.pickerIconBar} />
             <View style={[styles.pickerIconBar, styles.pickerIconBarShort]} />
             <View style={styles.pickerIconBar} />
           </TouchableOpacity>
-        )}
-        {picker && isPickerDefault && (
-          <TouchableOpacity
-            style={styles.iconBtnKbd}
-            onPress={focusInput}
-            activeOpacity={0.6}
-          >
-            <Text style={styles.iconKbdText}>⌨</Text>
-          </TouchableOpacity>
-        )}
+        ) : null}
         <TextInput
           ref={inputRef}
           style={styles.input}
