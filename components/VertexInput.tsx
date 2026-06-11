@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { View, TextInput, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, TextInput, Text, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Colors, Spacing, BorderRadius, Typography, Shadow } from '../constants/theme';
 import ScrollPicker, { PickerConfig } from './ScrollPicker';
+import { useSharedValues } from '../contexts/SharedValuesContext';
 
 const PICKER_SPHERE: PickerConfig = { min: -20, max: 20, step: 0.25, precision: 2 };
 const PICKER_CYLINDER: PickerConfig = { min: -10, max: 10, step: 0.25, precision: 2 };
@@ -32,6 +33,11 @@ const PICKER_MAP: Record<string, { config: PickerConfig; label: string; suffix?:
   toVertex: { config: PICKER_VERTEX, label: 'TO VERTEX', suffix: 'mm' },
 };
 
+// All five fields here are stepped, so all are picker-default.
+const PICKER_DEFAULT_FIELDS: Set<NonNullable<PickerField>> = new Set([
+  'sphere', 'cylinder', 'axis', 'fromVertex', 'toVertex',
+]);
+
 export default function VertexInput({
   power,
   onChangePower,
@@ -44,11 +50,55 @@ export default function VertexInput({
   newVertex,
   onChangeNewVertex,
 }: Props) {
-  const [activePicker, setActivePicker] = useState<PickerField>(null);
+  const { values: shared, setValue: setShared } = useSharedValues();
 
-  // Direction is derived from the actual From/To values: the larger vertex is
-  // the spectacle plane, the smaller is the contact lens. A larger lens-to-eye
-  // distance (glasses) moving to a smaller one (contacts) reads left→right.
+  // Hydrate empties from shared store on first mount.
+  useEffect(() => {
+    if (!power && shared.lastRx) onChangePower(shared.lastRx.sphere.toFixed(2));
+    if (!cylinder && shared.lastRx) onChangeCylinder(shared.lastRx.cylinder.toFixed(2));
+    if (!axis && shared.lastRx) onChangeAxis(String(shared.lastRx.axis));
+    if (originalVertex === '12' && shared.vertexDistance != null) {
+      onChangeOriginalVertex(shared.vertexDistance.toFixed(1));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Write back on every change (numeric values only).
+  const writeRxIfComplete = (sph: string, cyl: string, ax: string) => {
+    const s = parseFloat(sph);
+    const c = parseFloat(cyl);
+    const a = parseFloat(ax);
+    if (!isNaN(s) && !isNaN(c) && !isNaN(a)) {
+      setShared('lastRx', { sphere: s, cylinder: c, axis: a });
+    }
+  };
+
+  const onPowerChange = (v: string) => {
+    onChangePower(v);
+    writeRxIfComplete(v, cylinder, axis);
+  };
+  const onCylinderChange = (v: string) => {
+    onChangeCylinder(v);
+    writeRxIfComplete(power, v, axis);
+  };
+  const onAxisChange = (v: string) => {
+    onChangeAxis(v);
+    writeRxIfComplete(power, cylinder, v);
+  };
+  const onFromChange = (v: string) => {
+    onChangeOriginalVertex(v);
+    const n = parseFloat(v);
+    if (!isNaN(n)) setShared('vertexDistance', n);
+  };
+  const onToChange = (v: string) => {
+    onChangeNewVertex(v);
+    // newVertex is the target; we do not write it to shared store.
+  };
+
+  const [activePicker, setActivePicker] = useState<PickerField>(null);
+  const [editingField, setEditingField] = useState<PickerField>(null);
+  const inputRefs = useRef<Partial<Record<NonNullable<PickerField>, TextInput | null>>>({});
+
   const fromVal = parseFloat(originalVertex);
   const toVal = parseFloat(newVertex);
   const glassesToContacts = isNaN(fromVal) || isNaN(toVal) ? true : fromVal >= toVal;
@@ -57,6 +107,9 @@ export default function VertexInput({
 
   const swapDirection = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Swap is a UI direction flip, not a value entry — call the raw prop
+    // callbacks so we don't write the contact-lens vertex (often 0) into
+    // shared.vertexDistance, which represents the spectacle vertex.
     const prevFrom = originalVertex;
     onChangeOriginalVertex(newVertex);
     onChangeNewVertex(prevFrom);
@@ -75,116 +128,114 @@ export default function VertexInput({
 
   const handlePickerSelect = (value: string) => {
     switch (activePicker) {
-      case 'sphere': onChangePower(value); break;
-      case 'cylinder': onChangeCylinder(value); break;
-      case 'axis': onChangeAxis(value); break;
-      case 'fromVertex': onChangeOriginalVertex(value); break;
-      case 'toVertex': onChangeNewVertex(value); break;
+      case 'sphere': onPowerChange(value); break;
+      case 'cylinder': onCylinderChange(value); break;
+      case 'axis': onAxisChange(value); break;
+      case 'fromVertex': onFromChange(value); break;
+      case 'toVertex': onToChange(value); break;
     }
   };
 
-  const PickerButton = ({ field }: { field: PickerField }) => (
-    <TouchableOpacity
-      style={styles.pickerBtn}
-      onPress={() => setActivePicker(field)}
-      activeOpacity={0.6}
-      hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-    >
-      <View style={styles.pickerIconBar} />
-      <View style={[styles.pickerIconBar, styles.pickerIconBarShort]} />
-      <View style={styles.pickerIconBar} />
-    </TouchableOpacity>
-  );
+  const focusInput = (field: NonNullable<PickerField>) => {
+    setEditingField(field);
+    setTimeout(() => inputRefs.current[field]?.focus(), 0);
+  };
+
+  const handleFieldTap = (field: NonNullable<PickerField>) => {
+    if (PICKER_DEFAULT_FIELDS.has(field) && editingField !== field) {
+      setActivePicker(field);
+    } else {
+      focusInput(field);
+    }
+  };
+
+  const handleBlur = (field: NonNullable<PickerField>) => {
+    if (PICKER_DEFAULT_FIELDS.has(field)) setEditingField(null);
+  };
+
+  // Render helper (NOT a component) — returning JSX from a function avoids
+  // creating a new React component identity per render, which would unmount
+  // the TextInput on every keystroke and break focus.
+  const renderSmartField = (
+    field: NonNullable<PickerField>,
+    value: string,
+    onValueChange: (text: string) => void,
+    keyboardType: 'decimal-pad' | 'number-pad',
+    placeholder: string
+  ) => {
+    const isPickerDefault = PICKER_DEFAULT_FIELDS.has(field);
+    const inputInert = isPickerDefault && editingField !== field;
+    return (
+      <Pressable style={styles.inputRowSmall} onPress={() => handleFieldTap(field)}>
+        <TextInput
+          ref={(el) => { inputRefs.current[field] = el; }}
+          style={styles.inputSmall}
+          value={value}
+          onChangeText={onValueChange}
+          onBlur={() => handleBlur(field)}
+          keyboardType={keyboardType}
+          placeholder={placeholder}
+          placeholderTextColor={Colors.border}
+          selectionColor={Colors.accent}
+          pointerEvents={inputInert ? 'none' : 'auto'}
+        />
+        {isPickerDefault ? (
+          <TouchableOpacity
+            style={styles.iconBtnKbd}
+            onPress={() => focusInput(field)}
+            activeOpacity={0.6}
+            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+          >
+            <Text style={styles.iconKbdText}>⌨</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.pickerBtn}
+            onPress={() => setActivePicker(field)}
+            activeOpacity={0.6}
+            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+          >
+            <View style={styles.pickerIconBar} />
+            <View style={[styles.pickerIconBar, styles.pickerIconBarShort]} />
+            <View style={styles.pickerIconBar} />
+          </TouchableOpacity>
+        )}
+      </Pressable>
+    );
+  };
 
   const pickerInfo = activePicker ? PICKER_MAP[activePicker] : null;
 
   return (
     <View style={styles.container}>
-      {/* Sphere / Cylinder / Axis row */}
       <View style={styles.rxRow}>
         <View style={styles.rxField}>
           <Text style={styles.sectionLabel}>SPHERE (D)</Text>
-          <View style={styles.inputRowSmall}>
-            <TextInput
-              style={styles.inputSmall}
-              value={power}
-              onChangeText={onChangePower}
-              keyboardType="decimal-pad"
-              placeholder="-4.00"
-              placeholderTextColor={Colors.border}
-              selectionColor={Colors.accent}
-            />
-            <PickerButton field="sphere" />
-          </View>
+          {renderSmartField('sphere', power, onPowerChange, 'decimal-pad', '-4.00')}
         </View>
         <View style={styles.rxField}>
           <Text style={styles.sectionLabel}>CYLINDER (D)</Text>
-          <View style={styles.inputRowSmall}>
-            <TextInput
-              style={styles.inputSmall}
-              value={cylinder}
-              onChangeText={onChangeCylinder}
-              keyboardType="decimal-pad"
-              placeholder="-1.50"
-              placeholderTextColor={Colors.border}
-              selectionColor={Colors.accent}
-            />
-            <PickerButton field="cylinder" />
-          </View>
+          {renderSmartField('cylinder', cylinder, onCylinderChange, 'decimal-pad', '-1.50')}
         </View>
         <View style={styles.rxFieldSmall}>
           <Text style={styles.sectionLabel}>AXIS</Text>
-          <View style={styles.inputRowSmall}>
-            <TextInput
-              style={styles.inputSmall}
-              value={axis}
-              onChangeText={onChangeAxis}
-              keyboardType="number-pad"
-              placeholder="90"
-              placeholderTextColor={Colors.border}
-              selectionColor={Colors.accent}
-            />
-            <PickerButton field="axis" />
-          </View>
+          {renderSmartField('axis', axis, onAxisChange, 'number-pad', '90')}
         </View>
       </View>
 
       <Text style={styles.hint}>Leave Cylinder and Axis blank for sphere-only</Text>
 
-      {/* Vertex distance row */}
       <View style={styles.vertexRow}>
         <View style={styles.vertexField}>
           <Text style={styles.sectionLabel}>FROM VERTEX (mm)</Text>
-          <View style={styles.inputRowSmall}>
-            <TextInput
-              style={styles.inputSmall}
-              value={originalVertex}
-              onChangeText={onChangeOriginalVertex}
-              keyboardType="decimal-pad"
-              placeholder="12"
-              placeholderTextColor={Colors.border}
-              selectionColor={Colors.accent}
-            />
-            <PickerButton field="fromVertex" />
-          </View>
+          {renderSmartField('fromVertex', originalVertex, onFromChange, 'decimal-pad', '12')}
         </View>
 
         <Text style={styles.arrow}>→</Text>
 
         <View style={styles.vertexField}>
           <Text style={styles.sectionLabel}>TO VERTEX (mm)</Text>
-          <View style={styles.inputRowSmall}>
-            <TextInput
-              style={styles.inputSmall}
-              value={newVertex}
-              onChangeText={onChangeNewVertex}
-              keyboardType="decimal-pad"
-              placeholder="0"
-              placeholderTextColor={Colors.border}
-              selectionColor={Colors.accent}
-            />
-            <PickerButton field="toVertex" />
-          </View>
+          {renderSmartField('toVertex', newVertex, onToChange, 'decimal-pad', '0')}
         </View>
       </View>
 
@@ -235,12 +286,8 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     marginBottom: Spacing.xs,
   },
-  rxField: {
-    flex: 2,
-  },
-  rxFieldSmall: {
-    flex: 1,
-  },
+  rxField: { flex: 2 },
+  rxFieldSmall: { flex: 1 },
   hint: {
     fontSize: 11,
     color: Colors.textSecondary,
@@ -253,9 +300,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: Spacing.sm,
   },
-  vertexField: {
-    flex: 1,
-  },
+  vertexField: { flex: 1 },
   arrow: {
     fontSize: 24,
     color: Colors.accent,
@@ -292,13 +337,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     ...Shadow.card,
   },
-  dirText: {
-    ...Typography.bodyBold,
-    color: Colors.textOnPrimary,
-  },
-  dirArrow: {
-    color: Colors.accentLight,
-  },
+  dirText: { ...Typography.bodyBold, color: Colors.textOnPrimary },
+  dirArrow: { color: Colors.accentLight },
   dirSwapBadge: {
     width: 26,
     height: 26,
@@ -307,11 +347,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dirSwapIcon: {
-    color: Colors.accent,
-    fontSize: 14,
-    fontWeight: '700',
-  },
+  dirSwapIcon: { color: Colors.accent, fontSize: 14, fontWeight: '700' },
   dirHint: {
     fontSize: 11,
     color: Colors.textSecondary,
@@ -334,8 +370,16 @@ const styles = StyleSheet.create({
     borderRadius: 1,
     backgroundColor: Colors.textOnPrimary,
   },
-  pickerIconBarShort: {
-    width: 8,
-    backgroundColor: Colors.accent,
+  pickerIconBarShort: { width: 8, backgroundColor: Colors.accent },
+  iconBtnKbd: {
+    width: 24,
+    height: 24,
+    borderRadius: 5,
+    backgroundColor: Colors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
+  iconKbdText: { fontSize: 12, color: Colors.primary },
 });

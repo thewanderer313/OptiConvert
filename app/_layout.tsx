@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
 import { Colors } from '../constants/theme';
 import CustomSplash from '../components/CustomSplash';
+import { SharedValuesProvider } from '../contexts/SharedValuesContext';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -18,16 +19,18 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <StatusBar style="light" />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: Colors.surfaceAlt },
-        }}
-      />
-      {splashVisible && (
-        <CustomSplash onFinish={() => setSplashVisible(false)} />
-      )}
+      <SharedValuesProvider>
+        <StatusBar style="light" />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: Colors.surfaceAlt },
+          }}
+        />
+        {splashVisible && (
+          <CustomSplash onFinish={() => setSplashVisible(false)} />
+        )}
+      </SharedValuesProvider>
     </GestureHandlerRootView>
   );
 }

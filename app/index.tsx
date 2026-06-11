@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -50,8 +50,10 @@ import {
 } from '../utils/conversions';
 import { getLearningContent, LearningContent } from '../utils/learningSteps';
 
+import { useSharedValues } from '../contexts/SharedValuesContext';
 import DrawerMenu from '../components/DrawerMenu';
-import ModeTabs from '../components/ModeTabs';
+import HeaderTitleButton from '../components/HeaderTitleButton';
+import ToolPickerSheet from '../components/ToolPickerSheet';
 import ConversionInput from '../components/ConversionInput';
 import ResultsList from '../components/ResultsList';
 import LearningPanel from '../components/LearningPanel';
@@ -112,60 +114,60 @@ const PICKER_WORK_DIST = { min: 20, max: 100, step: 5, precision: 0 };
 // ─── Field definitions for multi-input categories ───────────
 
 const TRANSPOSE_FIELDS: FieldConfig[] = [
-  { key: 'sphere', label: 'SPHERE (D)', placeholder: '-2.00', suffix: 'D', picker: PICKER_SPHERE },
-  { key: 'cylinder', label: 'CYLINDER (D)', placeholder: '-1.50', suffix: 'D', picker: PICKER_CYLINDER },
-  { key: 'axis', label: 'AXIS (°)', placeholder: '90', suffix: '°', picker: PICKER_AXIS },
+  { key: 'sphere', label: 'SPHERE (D)', placeholder: '-2.00', suffix: 'D', picker: PICKER_SPHERE, defaultEntry: 'picker' },
+  { key: 'cylinder', label: 'CYLINDER (D)', placeholder: '-1.50', suffix: 'D', picker: PICKER_CYLINDER, defaultEntry: 'picker' },
+  { key: 'axis', label: 'AXIS (°)', placeholder: '90', suffix: '°', picker: PICKER_AXIS, defaultEntry: 'picker' },
 ];
 
 const SPH_EQUIV_FIELDS: FieldConfig[] = [
-  { key: 'sphere', label: 'SPHERE (D)', placeholder: '-2.00', suffix: 'D', picker: PICKER_SPHERE },
-  { key: 'cylinder', label: 'CYLINDER (D)', placeholder: '-1.50', suffix: 'D', picker: PICKER_CYLINDER },
+  { key: 'sphere', label: 'SPHERE (D)', placeholder: '-2.00', suffix: 'D', picker: PICKER_SPHERE, defaultEntry: 'picker' },
+  { key: 'cylinder', label: 'CYLINDER (D)', placeholder: '-1.50', suffix: 'D', picker: PICKER_CYLINDER, defaultEntry: 'picker' },
 ];
 
 const MBS_FIELDS: FieldConfig[] = [
   { key: 'ed', label: 'EFFECTIVE DIA', placeholder: '54', suffix: 'mm', picker: { min: 40, max: 70, step: 1, precision: 0 } },
   { key: 'framePd', label: 'FRAME PD', placeholder: '70', suffix: 'mm', picker: { min: 55, max: 85, step: 1, precision: 0 } },
-  { key: 'patientPd', label: 'PATIENT PD', placeholder: '64', suffix: 'mm', picker: PICKER_PD },
+  { key: 'patientPd', label: 'PATIENT PD', placeholder: '64', suffix: 'mm', picker: PICKER_PD, defaultEntry: 'picker' },
 ];
 
 const PRENTICE_FIELDS: FieldConfig[] = [
-  { key: 'decentration', label: 'DECENTRATION', placeholder: '5', suffix: 'mm', picker: PICKER_DECEN },
-  { key: 'power', label: 'LENS POWER', placeholder: '-4.00', suffix: 'D', picker: PICKER_SPHERE },
+  { key: 'decentration', label: 'DECENTRATION', placeholder: '5', suffix: 'mm', picker: PICKER_DECEN, defaultEntry: 'picker' },
+  { key: 'power', label: 'LENS POWER', placeholder: '-4.00', suffix: 'D', picker: PICKER_SPHERE, defaultEntry: 'picker' },
 ];
 
 const JAVAL_FIELDS: FieldConfig[] = [
-  { key: 'k1', label: 'K1 (STEEP)', placeholder: '44.00', suffix: 'D', picker: PICKER_K },
-  { key: 'k1Axis', label: 'K1 AXIS', placeholder: '90', suffix: '°', picker: PICKER_AXIS },
-  { key: 'k2', label: 'K2 (FLAT)', placeholder: '42.50', suffix: 'D', picker: PICKER_K },
-  { key: 'k2Axis', label: 'K2 AXIS', placeholder: '180', suffix: '°', picker: PICKER_AXIS },
+  { key: 'k1', label: 'K1 (STEEP)', placeholder: '44.00', suffix: 'D', picker: PICKER_K, defaultEntry: 'picker' },
+  { key: 'k1Axis', label: 'K1 AXIS', placeholder: '90', suffix: '°', picker: PICKER_AXIS, defaultEntry: 'picker' },
+  { key: 'k2', label: 'K2 (FLAT)', placeholder: '42.50', suffix: 'D', picker: PICKER_K, defaultEntry: 'picker' },
+  { key: 'k2Axis', label: 'K2 AXIS', placeholder: '180', suffix: '°', picker: PICKER_AXIS, defaultEntry: 'picker' },
 ];
 
 const FRAME_PD_FIELDS: FieldConfig[] = [
   { key: 'aSize', label: 'A SIZE', placeholder: '52', suffix: 'mm', picker: { min: 40, max: 62, step: 1, precision: 0 } },
   { key: 'dbl', label: 'DBL (BRIDGE)', placeholder: '18', suffix: 'mm', picker: { min: 14, max: 24, step: 1, precision: 0 } },
-  { key: 'patientPd', label: 'PATIENT PD', placeholder: '64', suffix: 'mm', picker: PICKER_PD },
+  { key: 'patientPd', label: 'PATIENT PD', placeholder: '64', suffix: 'mm', picker: PICKER_PD, defaultEntry: 'picker' },
 ];
 
 const NEAR_PD_FIELDS: FieldConfig[] = [
-  { key: 'distancePd', label: 'DISTANCE PD', placeholder: '64', suffix: 'mm', picker: PICKER_PD },
+  { key: 'distancePd', label: 'DISTANCE PD', placeholder: '64', suffix: 'mm', picker: PICKER_PD, defaultEntry: 'picker' },
   { key: 'workingDistance', label: 'WORKING DIST', placeholder: '40', suffix: 'cm', picker: PICKER_WORK_DIST },
 ];
 
 const BASE_CURVE_FIELDS: FieldConfig[] = [
-  { key: 'sphere', label: 'SPHERE (D)', placeholder: '-2.00', suffix: 'D', picker: PICKER_SPHERE },
-  { key: 'cylinder', label: 'CYLINDER (D)', placeholder: '-1.50', suffix: 'D', picker: PICKER_CYLINDER },
+  { key: 'sphere', label: 'SPHERE (D)', placeholder: '-2.00', suffix: 'D', picker: PICKER_SPHERE, defaultEntry: 'picker' },
+  { key: 'cylinder', label: 'CYLINDER (D)', placeholder: '-1.50', suffix: 'D', picker: PICKER_CYLINDER, defaultEntry: 'picker' },
 ];
 
 const MAGNIFICATION_FIELDS: FieldConfig[] = [
-  { key: 'power', label: 'BACK VERTEX', placeholder: '-6.00', suffix: 'D', picker: PICKER_SPHERE },
+  { key: 'power', label: 'BACK VERTEX', placeholder: '-6.00', suffix: 'D', picker: PICKER_SPHERE, defaultEntry: 'picker' },
   { key: 'centerThickness', label: 'CENTER THICK', placeholder: '2.0', suffix: 'mm', picker: PICKER_SMALL_MM },
-  { key: 'frontCurve', label: 'FRONT CURVE', placeholder: '4.00', suffix: 'D', picker: { min: 0, max: 12, step: 0.50, precision: 2 } },
+  { key: 'frontCurve', label: 'FRONT CURVE', placeholder: '4.00', suffix: 'D', picker: { min: 0, max: 12, step: 0.50, precision: 2 }, defaultEntry: 'picker' },
   { key: 'refractiveIndex', label: 'REF INDEX', placeholder: '1.50', picker: PICKER_INDEX },
-  { key: 'vertexDistance', label: 'VERTEX DIST', placeholder: '12', suffix: 'mm', picker: PICKER_VERTEX },
+  { key: 'vertexDistance', label: 'VERTEX DIST', placeholder: '12', suffix: 'mm', picker: PICKER_VERTEX, defaultEntry: 'picker' },
 ];
 
 const AS_WORN_FIELDS: FieldConfig[] = [
-  { key: 'power', label: 'SPHERE POWER (D)', placeholder: '-4.00', suffix: 'D', picker: PICKER_SPHERE },
+  { key: 'power', label: 'SPHERE POWER (D)', placeholder: '-4.00', suffix: 'D', picker: PICKER_SPHERE, defaultEntry: 'picker' },
   { key: 'tilt', label: 'PANTO TILT (°)', placeholder: '10', suffix: '°', picker: { min: 0, max: 25, step: 1, precision: 0 } },
   { key: 'refractiveIndex', label: 'INDEX (n)', placeholder: '1.50', picker: PICKER_INDEX },
 ];
@@ -177,11 +179,13 @@ export default function HomeScreen() {
   const [category, setCategory] = useState<Category>('diopters');
   const [learningMode, setLearningMode] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [toolSheetOpen, setToolSheetOpen] = useState(false);
   // Remember the last sub-tool used in each hub.
   const [hubTool, setHubTool] = useState<Record<string, Category>>({});
 
   const currentHub = HUBS.find((h) => h.key === hubKey) ?? HUBS[0];
-  const currentLabel = currentHub.title;
+  const currentToolLabel = currentHub.items.find((i) => i.key === category)?.label ?? currentHub.title;
+  const hasMultipleTools = currentHub.items.length > 1;
 
   const handleSelectHub = useCallback(
     (key: string) => {
@@ -232,6 +236,64 @@ export default function HomeScreen() {
   // Generic multi-field state for all new categories
   const [fieldValues, setFieldValues] = useState<Record<string, Record<string, string>>>({});
 
+  const { values: shared, setValue: setShared } = useSharedValues();
+
+  // Hydrate the just-selected category's shared fields from the shared store,
+  // but only when the field is empty (don't overwrite the user's entry).
+  // Runs on initial mount (initial category) and on every category change.
+  useEffect(() => {
+    const cat = category;
+    const pdStr = shared.patientPd != null ? shared.patientPd.toFixed(1) : undefined;
+    const wdStr = shared.workingDistance != null ? shared.workingDistance.toFixed(0) : undefined;
+    const riStr = shared.refractiveIndex != null ? shared.refractiveIndex.toFixed(2) : undefined;
+    const vdStr = shared.vertexDistance != null ? shared.vertexDistance.toFixed(1) : undefined;
+    const rx: { sphere: string; cylinder: string; axis: string } | null = shared.lastRx
+      ? {
+          sphere: shared.lastRx.sphere.toFixed(2),
+          cylinder: shared.lastRx.cylinder.toFixed(2),
+          axis: String(shared.lastRx.axis),
+        }
+      : null;
+
+    const additions: Record<string, string> = {};
+    const tryAdd = (key: string, val: string | undefined) => {
+      if (val && !fieldValues[cat]?.[key]) additions[key] = val;
+    };
+
+    if (cat === 'mbs' || cat === 'framePd') tryAdd('patientPd', pdStr);
+    if (cat === 'nearPd') {
+      tryAdd('distancePd', pdStr);
+      tryAdd('workingDistance', wdStr);
+    }
+    if (rx) {
+      if (cat === 'transpose') {
+        tryAdd('sphere', rx.sphere);
+        tryAdd('cylinder', rx.cylinder);
+        tryAdd('axis', rx.axis);
+      }
+      if (cat === 'sphEquiv' || cat === 'baseCurve') {
+        tryAdd('sphere', rx.sphere);
+        tryAdd('cylinder', rx.cylinder);
+      }
+      if (cat === 'magnification' || cat === 'asWorn') {
+        tryAdd('power', rx.sphere);
+      }
+    }
+    if (cat === 'magnification') {
+      tryAdd('refractiveIndex', riStr);
+      tryAdd('vertexDistance', vdStr);
+    }
+    if (cat === 'asWorn') tryAdd('refractiveIndex', riStr);
+
+    if (Object.keys(additions).length > 0) {
+      setFieldValues((prev) => ({
+        ...prev,
+        [cat]: { ...(prev[cat] ?? {}), ...additions },
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category]);
+
   const getFieldVal = useCallback(
     (cat: string, key: string) => fieldValues[cat]?.[key] ?? '',
     [fieldValues]
@@ -243,8 +305,24 @@ export default function HomeScreen() {
         ...prev,
         [cat]: { ...prev[cat], [key]: value },
       }));
+
+      // Mirror shared values back to the context so other tools see them.
+      const num = parseFloat(value);
+      if (isNaN(num)) return;
+
+      if ((cat === 'mbs' || cat === 'framePd') && key === 'patientPd') {
+        setShared('patientPd', num);
+      } else if (cat === 'nearPd' && key === 'distancePd') {
+        setShared('patientPd', num);
+      } else if (cat === 'nearPd' && key === 'workingDistance') {
+        setShared('workingDistance', num);
+      } else if (cat === 'magnification' && key === 'vertexDistance') {
+        setShared('vertexDistance', num);
+      } else if ((cat === 'magnification' || cat === 'asWorn') && key === 'refractiveIndex') {
+        setShared('refractiveIndex', num);
+      }
     },
-    []
+    [setShared]
   );
 
   const getFields = useCallback(
@@ -256,6 +334,35 @@ export default function HomeScreen() {
     (cat: string) => (key: string, value: string) => setFieldVal(cat, key, value),
     [setFieldVal]
   );
+
+  const captureRxFromCategory = useCallback(
+    (cat: string) => {
+      const fields = fieldValues[cat] ?? {};
+      const s = parseFloat(fields.sphere);
+      const c = parseFloat(fields.cylinder);
+      const a = parseFloat(fields.axis);
+      // Require a real axis before writing — sphEquiv has no axis field, so
+      // it correctly never writes lastRx. This prevents an axis=0 leak from
+      // mid-entry on Transpose hydrating into Vertex on next mount.
+      if (!isNaN(s) && !isNaN(c) && !isNaN(a)) {
+        setShared('lastRx', { sphere: s, cylinder: c, axis: a });
+      }
+    },
+    [fieldValues, setShared]
+  );
+
+  useEffect(() => {
+    captureRxFromCategory('transpose');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fieldValues.transpose]);
+  useEffect(() => {
+    captureRxFromCategory('sphEquiv');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fieldValues.sphEquiv]);
+  useEffect(() => {
+    captureRxFromCategory('baseCurve');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fieldValues.baseCurve]);
 
   // ─── Compute results ───────────────────────────────────
 
@@ -701,6 +808,7 @@ export default function HomeScreen() {
             unitOptions={DIOPTER_OPTIONS}
             label="ENTER VALUE"
             picker={PICKER_SPHERE}
+            defaultEntry="picker"
           />
         );
       case 'prism':
@@ -713,6 +821,7 @@ export default function HomeScreen() {
             unitOptions={PRISM_OPTIONS}
             label="ENTER PRISM"
             picker={{ min: 0, max: 30, step: 0.5, precision: 1 }}
+            defaultEntry="picker"
           />
         );
       case 'vertex':
@@ -903,7 +1012,12 @@ export default function HomeScreen() {
               <View style={styles.hamburgerLine} />
             </TouchableOpacity>
             <View style={styles.headerCenter}>
-              <Text style={styles.headerTitle}>{currentLabel}</Text>
+              <HeaderTitleButton
+                hubTitle={currentHub.title}
+                toolLabel={currentToolLabel}
+                hasMultiple={hasMultipleTools}
+                onPress={() => setToolSheetOpen(true)}
+              />
             </View>
             <TouchableOpacity
               style={[
@@ -935,14 +1049,14 @@ export default function HomeScreen() {
             onClose={() => setDrawerOpen(false)}
           />
 
-          {/* Sub-tool mode tabs for the current hub */}
-          {currentHub.items.length > 1 && (
-            <ModeTabs
-              items={currentHub.items}
-              selected={category}
-              onSelect={handleSelectTool}
-            />
-          )}
+          {/* Sub-tool picker sheet */}
+          <ToolPickerSheet
+            visible={toolSheetOpen}
+            hub={currentHub}
+            selected={category}
+            onSelect={handleSelectTool}
+            onClose={() => setToolSheetOpen(false)}
+          />
 
           {/* Scrollable content */}
           <ScrollView
@@ -1029,10 +1143,6 @@ const styles = StyleSheet.create({
   },
   headerCenter: {
     flex: 1,
-  },
-  headerTitle: {
-    ...Typography.header,
-    color: Colors.textOnPrimary,
   },
   learnButton: {
     flexDirection: 'row',

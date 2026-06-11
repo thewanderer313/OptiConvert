@@ -1,15 +1,19 @@
-import React, { useState } from 'react';
-import { View, TextInput, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, TextInput, Text, StyleSheet, TouchableOpacity, ScrollView, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Colors, Spacing, BorderRadius, Typography, Shadow } from '../constants/theme';
 import { REFRACTIVE_INDICES } from '../utils/conversions';
 import ScrollPicker, { PickerConfig } from './ScrollPicker';
+import { useSharedValues } from '../contexts/SharedValuesContext';
 
 const PICKER_POWER: PickerConfig = { min: -20, max: 20, step: 0.25, precision: 2 };
 const PICKER_DIA: PickerConfig = { min: 40, max: 80, step: 1, precision: 0 };
 const PICKER_MIN_T: PickerConfig = { min: 0.5, max: 5, step: 0.1, precision: 1 };
 
 type PickerField = 'power' | 'diameter' | 'minThickness' | null;
+
+// Power is the only stepped Rx-like value; diameter and min thickness are free.
+const PICKER_DEFAULT_FIELDS: Set<NonNullable<PickerField>> = new Set(['power']);
 
 interface Props {
   power: string;
@@ -32,7 +36,23 @@ export default function ThicknessInput({
   minThickness,
   onChangeMinThickness,
 }: Props) {
+  const { values: shared, setValue: setShared } = useSharedValues();
+
+  useEffect(() => {
+    if (shared.refractiveIndex != null && shared.refractiveIndex !== refractiveIndex) {
+      onChangeRefractiveIndex(shared.refractiveIndex);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const selectRefractiveIndex = (value: number) => {
+    onChangeRefractiveIndex(value);
+    setShared('refractiveIndex', value);
+  };
+
   const [activePicker, setActivePicker] = useState<PickerField>(null);
+  const [editingField, setEditingField] = useState<PickerField>(null);
+  const inputRefs = useRef<Partial<Record<NonNullable<PickerField>, TextInput | null>>>({});
 
   const getPickerValue = () => {
     switch (activePicker) {
@@ -60,18 +80,72 @@ export default function ThicknessInput({
     }
   };
 
-  const PickerButton = ({ field }: { field: PickerField }) => (
-    <TouchableOpacity
-      style={styles.pickerBtn}
-      onPress={() => setActivePicker(field)}
-      activeOpacity={0.6}
-      hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-    >
-      <View style={styles.pickerIconBar} />
-      <View style={[styles.pickerIconBar, styles.pickerIconBarShort]} />
-      <View style={styles.pickerIconBar} />
-    </TouchableOpacity>
-  );
+  const focusInput = (field: NonNullable<PickerField>) => {
+    setEditingField(field);
+    setTimeout(() => inputRefs.current[field]?.focus(), 0);
+  };
+
+  const handleFieldTap = (field: NonNullable<PickerField>) => {
+    if (PICKER_DEFAULT_FIELDS.has(field) && editingField !== field) {
+      setActivePicker(field);
+    } else {
+      focusInput(field);
+    }
+  };
+
+  const handleBlur = (field: NonNullable<PickerField>) => {
+    if (PICKER_DEFAULT_FIELDS.has(field)) setEditingField(null);
+  };
+
+  // Render helper (NOT a component) — returning JSX from a function avoids
+  // creating a new React component identity per render, which would unmount
+  // the TextInput on every keystroke and break focus.
+  const renderSmartField = (
+    field: NonNullable<PickerField>,
+    value: string,
+    onValueChange: (text: string) => void,
+    placeholder: string
+  ) => {
+    const isPickerDefault = PICKER_DEFAULT_FIELDS.has(field);
+    const inputInert = isPickerDefault && editingField !== field;
+    return (
+      <Pressable style={styles.inputBox} onPress={() => handleFieldTap(field)}>
+        <TextInput
+          ref={(el) => { inputRefs.current[field] = el; }}
+          style={styles.input}
+          value={value}
+          onChangeText={onValueChange}
+          onBlur={() => handleBlur(field)}
+          keyboardType="decimal-pad"
+          placeholder={placeholder}
+          placeholderTextColor={Colors.border}
+          selectionColor={Colors.accent}
+          pointerEvents={inputInert ? 'none' : 'auto'}
+        />
+        {isPickerDefault ? (
+          <TouchableOpacity
+            style={styles.iconBtnKbd}
+            onPress={() => focusInput(field)}
+            activeOpacity={0.6}
+            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+          >
+            <Text style={styles.iconKbdText}>⌨</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.pickerBtn}
+            onPress={() => setActivePicker(field)}
+            activeOpacity={0.6}
+            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+          >
+            <View style={styles.pickerIconBar} />
+            <View style={[styles.pickerIconBar, styles.pickerIconBarShort]} />
+            <View style={styles.pickerIconBar} />
+          </TouchableOpacity>
+        )}
+      </Pressable>
+    );
+  };
 
   const pickerInfo = activePicker ? getPickerConfig() : null;
 
@@ -80,33 +154,11 @@ export default function ThicknessInput({
       <View style={styles.row}>
         <View style={styles.field}>
           <Text style={styles.label}>LENS POWER (D)</Text>
-          <View style={styles.inputBox}>
-            <TextInput
-              style={styles.input}
-              value={power}
-              onChangeText={onChangePower}
-              keyboardType="decimal-pad"
-              placeholder="-3.00"
-              placeholderTextColor={Colors.border}
-              selectionColor={Colors.accent}
-            />
-            <PickerButton field="power" />
-          </View>
+          {renderSmartField('power', power, onChangePower, '-3.00')}
         </View>
         <View style={styles.field}>
           <Text style={styles.label}>DIAMETER (mm)</Text>
-          <View style={styles.inputBox}>
-            <TextInput
-              style={styles.input}
-              value={diameter}
-              onChangeText={onChangeDiameter}
-              keyboardType="decimal-pad"
-              placeholder="70"
-              placeholderTextColor={Colors.border}
-              selectionColor={Colors.accent}
-            />
-            <PickerButton field="diameter" />
-          </View>
+          {renderSmartField('diameter', diameter, onChangeDiameter, '70')}
         </View>
       </View>
 
@@ -124,16 +176,11 @@ export default function ThicknessInput({
               style={[styles.materialChip, isActive && styles.materialChipActive]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onChangeRefractiveIndex(ri.value);
+                selectRefractiveIndex(ri.value);
               }}
               activeOpacity={0.7}
             >
-              <Text
-                style={[
-                  styles.materialText,
-                  isActive && styles.materialTextActive,
-                ]}
-              >
+              <Text style={[styles.materialText, isActive && styles.materialTextActive]}>
                 {ri.label}
               </Text>
             </TouchableOpacity>
@@ -142,18 +189,7 @@ export default function ThicknessInput({
       </ScrollView>
 
       <Text style={styles.label}>MIN THICKNESS (mm)</Text>
-      <View style={styles.inputBox}>
-        <TextInput
-          style={styles.input}
-          value={minThickness}
-          onChangeText={onChangeMinThickness}
-          keyboardType="decimal-pad"
-          placeholder="1.5"
-          placeholderTextColor={Colors.border}
-          selectionColor={Colors.accent}
-        />
-        <PickerButton field="minThickness" />
-      </View>
+      {renderSmartField('minThickness', minThickness, onChangeMinThickness, '1.5')}
 
       {pickerInfo && (
         <ScrollPicker
@@ -176,13 +212,8 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
     gap: Spacing.sm,
   },
-  row: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  field: {
-    flex: 1,
-  },
+  row: { flexDirection: 'row', gap: Spacing.sm },
+  field: { flex: 1 },
   label: {
     ...Typography.caption,
     color: Colors.textSecondary,
@@ -207,10 +238,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     textAlign: 'center',
   },
-  materialRow: {
-    gap: Spacing.xs,
-    paddingBottom: Spacing.xs,
-  },
+  materialRow: { gap: Spacing.xs, paddingBottom: Spacing.xs },
   materialChip: {
     paddingHorizontal: Spacing.sm + 2,
     paddingVertical: Spacing.xs + 2,
@@ -219,18 +247,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  materialChipActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  materialText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-  },
-  materialTextActive: {
-    color: Colors.textOnPrimary,
-  },
+  materialChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  materialText: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary },
+  materialTextActive: { color: Colors.textOnPrimary },
   pickerBtn: {
     width: 24,
     height: 24,
@@ -246,8 +265,16 @@ const styles = StyleSheet.create({
     borderRadius: 1,
     backgroundColor: Colors.textOnPrimary,
   },
-  pickerIconBarShort: {
-    width: 8,
-    backgroundColor: Colors.accent,
+  pickerIconBarShort: { width: 8, backgroundColor: Colors.accent },
+  iconBtnKbd: {
+    width: 24,
+    height: 24,
+    borderRadius: 5,
+    backgroundColor: Colors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
+  iconKbdText: { fontSize: 12, color: Colors.primary },
 });
