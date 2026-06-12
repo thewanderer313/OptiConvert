@@ -32,9 +32,9 @@
           "imageWidth": 1284,
           "enableFullScreenImage_legacy": true,
           "android": {
-            "image": "./assets/splash-blank.png",
+            "image": "./assets/opticonverticon.png",
             "backgroundColor": "#1B2A4A",
-            "imageWidth": 1
+            "imageWidth": 240
           }
         }
       ]
