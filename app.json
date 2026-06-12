@@ -2,7 +2,7 @@
   "expo": {
     "name": "OptiConvert",
     "slug": "OptiConvert",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "orientation": "portrait",
     "icon": "./assets/opticonverticon.png",
     "userInterfaceStyle": "light",
@@ -32,9 +32,9 @@
           "imageWidth": 1284,
           "enableFullScreenImage_legacy": true,
           "android": {
-            "image": "./assets/opticonverticon-foreground.png",
+            "image": "./assets/splash-blank.png",
             "backgroundColor": "#1B2A4A",
-            "imageWidth": 220
+            "imageWidth": 1
           }
         }
       ]

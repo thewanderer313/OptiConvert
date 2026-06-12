@@ -9,8 +9,8 @@ interface Props {
 
 export default function CustomSplash({
   onFinish,
-  visibleMs = 1500,
-  fadeMs = 300,
+  visibleMs = 1800,
+  fadeMs = 400,
 }: Props) {
   const opacity = useRef(new Animated.Value(1)).current;
 
@@ -35,7 +35,7 @@ export default function CustomSplash({
       <Image
         source={require('../assets/OCSplash.png')}
         style={StyleSheet.absoluteFill}
-        resizeMode="contain"
+        resizeMode="cover"
       />
     </Animated.View>
   );
