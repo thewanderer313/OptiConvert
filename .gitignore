@@ -39,3 +39,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Local diagnostic artifacts (kept on disk, not in repo)
+assets/Screen_Recording*.mp4
+assets/_splash_frames/
